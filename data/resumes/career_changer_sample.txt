@@ -1,0 +1,50 @@
+MAYA RIVERA
+Email: maya.rivera@example.com
+Phone: +91-90000-00003
+Location: Hyderabad, Telangana
+LinkedIn: linkedin.com/in/maya-rivera-example
+
+SUMMARY
+Career changer transitioning from operations into software development. Brings 5 years of experience in process coordination, reporting, documentation, and cross-functional communication. Completed hands-on training in Python, SQL, web development, and Git and has built several small software projects independently.
+
+SKILLS
+Python, SQL, HTML, CSS, JavaScript, Git, GitHub, REST APIs, SQLite, Problem Solving, Data Analysis, Documentation, Process Improvement
+
+EXPERIENCE
+
+Operations Specialist
+Invented Horizon Services, Hyderabad, Telangana
+January 2021 - Present
+- Coordinated recurring operational workflows across multiple internal teams.
+- Prepared spreadsheet-based reports and investigated inconsistencies in operational data.
+- Documented standard operating procedures and improved the organisation of internal process documentation.
+- Worked with technical and non-technical teams to track issues and resolve workflow problems.
+- Automated several repetitive reporting tasks using Python scripts developed during independent learning.
+
+Operations Coordinator
+BrightPath Commerce Group, Hyderabad, Telangana
+July 2019 - December 2020
+- Maintained operational records and prepared weekly performance reports.
+- Coordinated requests between customer support, finance, and operations teams.
+- Identified recurring process delays and proposed workflow improvements.
+- Created documented procedures for common administrative tasks.
+
+PROJECTS
+
+Personal Expense Tracker
+- Built a Python application for recording and categorising personal expenses.
+- Added SQLite storage and basic reporting functionality.
+
+Job Application Tracker
+- Built a simple web application using HTML, CSS, and JavaScript.
+- Implemented forms for recording applications, interview stages, and follow-up dates.
+
+EDUCATION
+
+Postgraduate Certificate in Software Development
+Fictional Technology Academy, Hyderabad
+2025 - 2026
+
+Bachelor of Business Administration
+Fictional State University, Hyderabad
+2016 - 2019

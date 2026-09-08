@@ -1,0 +1,44 @@
+ARIA VANCE
+Email: aria.vance@example.com
+Phone: +91-90000-00001
+Location: Pune, Maharashtra
+LinkedIn: linkedin.com/in/aria-vance-example
+Portfolio: aria-vance.example.com
+
+SUMMARY
+Software Engineer with 3 years of experience building web applications and backend services. Experienced in Python, JavaScript, REST APIs, SQL, and cloud-based application development. Strong focus on writing maintainable code, debugging production issues, and improving application performance.
+
+SKILLS
+Python, JavaScript, TypeScript, FastAPI, Django, REST APIs, SQL, PostgreSQL, Git, Docker, HTML, CSS, React, AWS, Unit Testing
+
+EXPERIENCE
+
+Software Engineer
+Fictional Labs Technologies, Pune, Maharashtra
+June 2023 - Present
+- Developed REST APIs using Python and FastAPI for an internal workflow platform.
+- Improved database query performance by restructuring frequently used SQL queries.
+- Built automated unit tests for backend services and integrated them into the development workflow.
+- Containerised development services using Docker to simplify local setup.
+- Investigated application defects and collaborated with frontend engineers to resolve API integration issues.
+
+Junior Software Engineer
+BlueOrbit Systems, Pune, Maharashtra
+July 2022 - May 2023
+- Implemented backend features using Python and Django.
+- Created PostgreSQL tables and queries for customer-facing application features.
+- Integrated third-party APIs and handled API response validation and error cases.
+- Used Git for source control and participated in code reviews.
+- Assisted with deployment troubleshooting and application monitoring.
+
+PROJECTS
+
+TaskFlow API
+- Built a small task-management REST API using FastAPI and PostgreSQL.
+- Added authentication, CRUD operations, validation, and automated tests.
+
+EDUCATION
+
+Bachelor of Technology in Computer Engineering
+Fictional Institute of Technology, Pune
+2018 - 2022

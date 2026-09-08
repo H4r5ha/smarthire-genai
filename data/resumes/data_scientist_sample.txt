@@ -1,0 +1,52 @@
+NOAH MERCER
+Email: noah.mercer@example.com
+Phone: +91-90000-00002
+Location: Bengaluru, Karnataka
+LinkedIn: linkedin.com/in/noah-mercer-example
+
+SUMMARY
+Data Scientist with 2.5 years of experience working with structured business data, predictive modelling, exploratory analysis, and data visualisation. Comfortable using Python, pandas, scikit-learn, SQL, and machine-learning workflows to investigate business problems and communicate data-driven findings.
+
+SKILLS
+Python, pandas, NumPy, scikit-learn, SQL, PostgreSQL, Jupyter, Matplotlib, Seaborn, Machine Learning, Regression, Classification, Feature Engineering, Data Cleaning, Exploratory Data Analysis, Statistics
+
+EXPERIENCE
+
+Data Scientist
+Northstar Analytics Works, Bengaluru, Karnataka
+August 2023 - Present
+- Cleaned and analysed customer and transaction datasets using Python and pandas.
+- Developed classification models using scikit-learn for internal business analysis.
+- Performed feature engineering and compared multiple model configurations.
+- Created visualisations and summary reports to communicate analytical findings to non-technical stakeholders.
+- Wrote SQL queries to combine and investigate data stored in PostgreSQL.
+
+Junior Data Analyst
+MetricSpring Solutions, Bengaluru, Karnataka
+July 2022 - July 2023
+- Performed exploratory data analysis on operational datasets.
+- Built recurring reports using SQL and Python.
+- Identified missing values, inconsistent records, and duplicate entries during data preparation.
+- Created charts and dashboards to support monthly business reviews.
+- Assisted senior analysts with statistical analysis and dataset preparation.
+
+PROJECTS
+
+Customer Churn Prediction
+- Built a classification prototype using scikit-learn to estimate customer churn risk.
+- Performed data cleaning, feature preparation, model training, and evaluation.
+- Compared logistic regression and tree-based approaches.
+
+Sales Forecast Exploration
+- Analysed historical sales data with pandas and Matplotlib.
+- Investigated monthly patterns and seasonal changes in the dataset.
+
+EDUCATION
+
+Master of Science in Data Analytics
+Fictional School of Computing, Bengaluru
+2020 - 2022
+
+Bachelor of Commerce
+Fictional City College, Mysuru
+2017 - 2020

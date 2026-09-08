@@ -1,0 +1,1 @@
+"""SmartHire GenAI backend package."""

@@ -1,0 +1,26 @@
+ARIA VANCE
+Email: aria.vance@example.com
+Phone: +91-90000-00001
+Location: Pune, Maharashtra
+
+SUMMARY
+Software Engineer with 3 years of experience building web applications and backend services.
+
+SKILLS
+Python, FastAPI, SQL, Git
+
+EXPERIENCE
+Software Engineer
+Fictional Labs
+2023 - Present
+- Built REST APIs using Python and FastAPI.
+- Improved backend application reliability through testing and debugging.
+
+EDUCATION
+Bachelor of Technology in Computer Engineering
+Fictional Institute of Technology
+2018 - 2022
+
+PROJECTS
+TaskFlow API
+- Built a task-management REST API using FastAPI and PostgreSQL.
