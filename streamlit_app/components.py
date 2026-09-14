@@ -40,7 +40,6 @@ def md(markup: str) -> None:
 # ---------------------------------------------------------------------------
 def page_header(kicker: str, title: str, subtitle: str) -> None:
     md(
-        f'<div class="sh-kicker">{esc(kicker).upper()}</div>'
         f'<h1 class="sh-title">{esc(title)}</h1>'
         f'<p class="sh-subtitle">{esc(subtitle)}</p>'
     )

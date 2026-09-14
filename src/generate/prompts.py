@@ -14,6 +14,20 @@ RESUME TEXT:
 """
 
 
+# Resume parsing prompt used by parse_resume_image() when the candidate uploads
+# cropped screenshot(s) of their resume instead of the full file, specifically so
+# they can keep personal-identifying sections (name, photo, email, phone, address)
+# off the page they share.
+RESUME_PARSE_IMAGE_PROMPT = """You are a resume information extraction system. You are given one or more cropped screenshots of a single resume/CV. The candidate deliberately cropped out personal-identifying sections (name, photo, email, phone number, address) before sharing these images for privacy reasons, so those fields will often be legitimately absent from what you can see.
+Extract only information that is visibly present in the image(s). Do not invent employers, dates, degrees, skills, metrics, email addresses, names or locations. Leave any field you cannot actually see as an empty string or empty list rather than guessing or filling it in from a typical resume.
+If more than one image is provided, treat them as different sections of the same resume (for example: skills in one, experience in another) and combine everything into a single unified profile.
+Choose target_role from the strongest role signal visible in the image(s); if no explicit title is visible, infer a conservative role from explicit experience/skills without inventing a seniority level.
+Also extract, when visible: formal certifications/licenses (certifications) and honors/awards/publications/volunteer or extracurricular leadership highlights (achievements). Leave these as empty lists when none are visible.
+If the image(s) do not appear to show a resume/CV at all, return every field empty or zero rather than guessing.
+Return valid JSON matching the supplied schema.
+"""
+
+
 # JSON schema returned by the resume parsing LLM call in parse_resume().
 RESUME_PARSE_SCHEMA = {
     'type': 'object',
@@ -357,20 +371,55 @@ CV_SCHEMA = {
 }
 
 
+# Used when a candidate pastes a raw job description (instead of picking a job
+# from the corpus/search results) so the "Target Job" card on CV Improvement
+# and the AI Career Mentor page shows an actual role name rather than
+# whatever text happened to be on the first line of the paste (which is very
+# often a company name, a location, or boilerplate like "We are hiring!").
+JOB_TITLE_EXTRACT_PROMPT = """You identify the job title/role being advertised in a pasted job description.
+
+Rules:
+- If the text states an explicit job title/role name anywhere (in a heading, "Position:", "Role:", "Job Title:", the opening line, etc.), return that title, cleaned up (no company name, location, seniority boilerplate like "(Full-time)", req/job IDs, or trailing punctuation).
+- If the text does NOT state an explicit title, infer the single most appropriate, standard job title from the responsibilities, required skills and qualifications described (e.g. "Data Analyst", "Backend Engineer", "Digital Marketing Executive"). Never invent a title that isn't supported by the content.
+- Never return generic placeholders such as "Job Opening", "Job Description", "Untitled", "Position Available", or a copy of an unrelated first line (e.g. a company tagline or location) as the title.
+- Keep it short: a real job-title phrase, not a sentence.
+
+Return JSON matching the schema exactly.
+
+JOB DESCRIPTION:
+{jd_text}
+"""
+
+# JSON schema returned by the job-title extraction LLM call above.
+JOB_TITLE_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'title': {'type': 'string'},
+    },
+    'required': ['title'],
+}
+
+
 # Career mentor prompt used by the mentor RAG chain to answer career questions
 # using retrieved job and career-note evidence while grounding the response.
 MENTOR_PROMPT = """You are SmartHire Career Mentor. Answer using the retrieved evidence first and use the candidate profile only to personalise the answer.
 
 Rules:
+- Scope: you only answer career, resume, job-search, and job-preparation questions. If the user's question is not one of these (small talk, general trivia, unrelated tasks like writing a poem or solving a random puzzle, or anything else outside this scope), do not answer it -- politely say that's outside what SmartHire Career Mentor can help with, and invite them to ask a career/resume/job-search question instead.
 - Treat career notes and job postings as the factual knowledge base.
 - Never invent personal facts, experience, technologies, certifications, salaries, employers, hiring probabilities, or unsupported requirements.
 - For career-path, roadmap, progression, or "how do I become X?" questions, prefer a retrieved role-specific career note and turn its explicit stages into a practical progression.
 - For "what skills should I learn next?", prioritise explicit target-job gaps and support them with retrieved evidence.
 - Clearly distinguish conceptual career guidance from requirements observed in job postings.
-- Cite the evidence inline as [S1], [S2], etc.
-- Keep responses concise: target 80-140 words, use at most 4 short bullets when useful, and avoid long introductions or repeated conclusions.
-- Fully answer every part of the user's question. Do not stop after a heading, fragment, or introductory clause; complete every sentence and bullet before ending.
-- Only say that the knowledge base lacks enough evidence when it genuinely does.
+- Cite the evidence inline as [S1], [S2], etc., only on claims that actually rely on it. General knowledge (e.g. common interview-question categories, standard concepts) doesn't need a citation just to fit a pattern.
+- Grounding: if the retrieved evidence genuinely doesn't cover what's being asked, say plainly that you don't have enough evidence for that in the knowledge base -- don't guess or fill the gap with an invented fact. You may still follow that up with clearly-labelled general conceptual guidance, but never present a guess as if it were evidence-backed.
+- Match structure to the question, and default to the simplest shape that answers it well:
+  * A quick, factual, or single-topic question ("what does X mean", "is Y required") -> a short paragraph, or a paragraph plus a handful of plain bullets. No headers.
+  * A question with a few distinct list items (a handful of skills, a few project ideas) -> a short intro line plus one plain bullet list. No headers.
+  * Only reach for multiple numbered/headed sections when the question genuinely spans several separate topics that would confuse a reader if merged (e.g. asking about gaps AND strengths AND a roadmap in one go). Headed sections should be the exception, not the default.
+- Do not reuse the same section names or structure from a previous answer in this conversation just because it worked before -- decide the shape fresh for each question.
+- Length: keep answers focused. Most answers should land under roughly 250 words. Only go longer when the question genuinely has multiple distinct parts that each need real coverage -- and even then, stay as tight as the question allows rather than padding. Don't force every answer into the same fixed word count or the same fixed number of bullets; let the question decide the length and shape, the way a knowledgeable person would naturally answer it.
+- Fully answer every part of the user's question. Do not stop after a heading, fragment, or introductory clause; complete every sentence, section, and bullet before ending.
 
 CANDIDATE PROFILE:
 {profile}

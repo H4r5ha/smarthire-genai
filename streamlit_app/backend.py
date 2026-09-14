@@ -7,8 +7,12 @@ from src.core.paths import JOBS_CSV, REPORTS_DIR, RESUMES_DIR, VECTOR_DIR
 from src.data.loader import dataset_metrics, load_jobs
 from src import config
 from src.generate.cv_suggestions import generate as generate_cv
+from src.generate.jd_title import extract_job_title as extract_job_title_real
 from src.mentor.rag_chain import ask as mentor_ask, status as mentor_status
-from src.parsing.resume_parser import parse_resume as parse_real_resume
+from src.parsing.resume_parser import (
+    parse_resume as parse_real_resume,
+    parse_resume_image as parse_real_resume_image,
+)
 from src.search.job_search import (
     ensure_index_ready,
     rebuild_index as rebuild_real_index,
@@ -76,6 +80,15 @@ def parse_resume(file: Any, *, demo: bool = False) -> dict:
         raise BackendError(str(exc)) from exc
 
 
+def parse_resume_image(files: list[Any]) -> dict:
+    """Privacy-mode parse: build a profile from cropped resume screenshot(s)
+    instead of a full resume file."""
+    try:
+        return parse_real_resume_image(files)
+    except Exception as exc:
+        raise BackendError(str(exc)) from exc
+
+
 def suggest_roles(profile: dict | None) -> list[dict]:
     try:
         return suggest_real_roles(profile)
@@ -88,6 +101,20 @@ def search_jobs(query: str, profile: dict | None) -> dict:
         return search_real(query, profile)
     except Exception as exc:
         raise BackendError(str(exc)) from exc
+
+
+def extract_job_title(jd_text: str) -> str:
+    """Best-effort job title/role name for a pasted job description, used to
+    label the "Target Job" card. Never raises: degrades to a plain-text
+    fallback on any LLM/parsing error so pasting a JD always keeps working."""
+    try:
+        return extract_job_title_real(jd_text)
+    except Exception:
+        first_line = next(
+            (line.strip() for line in (jd_text or '').splitlines() if line.strip()),
+            'Pasted Job Description',
+        )
+        return first_line[:80]
 
 
 def improve_cv(resume: dict | None, target_job: dict) -> dict:

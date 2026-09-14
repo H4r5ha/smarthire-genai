@@ -71,7 +71,7 @@ def _friendly_failure(last_exc: Exception | None) -> RuntimeError:
     return RuntimeError(f"Gemini request failed: {last_exc}")
 
 
-def _call_with_fallback(build_config: Callable[[], types.GenerateContentConfig], *, prompt: str) -> str:
+def _call_with_fallback(build_config: Callable[[], types.GenerateContentConfig], *, contents) -> str:
     last_exc: Exception | None = None
 
     for model in _model_candidates():
@@ -79,7 +79,7 @@ def _call_with_fallback(build_config: Callable[[], types.GenerateContentConfig],
             try:
                 response = client().models.generate_content(
                     model=model,
-                    contents=prompt,
+                    contents=contents,
                     config=build_config(),
                 )
                 text = (response.text or "").strip()
@@ -104,9 +104,56 @@ def generate_json(prompt: str, schema: dict) -> dict:
         return types.GenerateContentConfig(
             response_mime_type="application/json",
             response_json_schema=schema,
+            # Structured extraction (resume parsing, etc.) must be
+            # reproducible: the same input should not produce a different
+            # skills/target_role list on every re-upload. The default
+            # sampling temperature is non-zero, so without pinning this the
+            # model is free to phrase/omit/reorder fields differently each
+            # call, which then cascades into different role-eligibility and
+            # "Suggested Roles" results downstream in job_search.py for an
+            # identical resume. temperature=0 + a fixed seed make the
+            # extraction deterministic for identical input.
+            temperature=0.0,
+            seed=config.GEMINI_SEED,
         )
 
-    text = _call_with_fallback(build_config, prompt=prompt)
+    text = _call_with_fallback(build_config, contents=prompt)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Gemini returned invalid structured JSON. Please try again.") from exc
+
+
+def generate_json_from_images(
+    prompt: str,
+    schema: dict,
+    images: list[tuple[bytes, str]],
+) -> dict:
+    """Structured JSON extraction grounded in one or more images (e.g. cropped
+    resume screenshots) instead of plain text. `images` is a list of
+    (raw_bytes, mime_type) tuples; all images are sent together in one call so
+    the model can combine information across several partial screenshots of
+    the same resume.
+    """
+    if not images:
+        raise ValueError("At least one image is required.")
+
+    def build_config() -> types.GenerateContentConfig:
+        return types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_json_schema=schema,
+            # Same determinism fix as generate_json() above - this is the
+            # path used by the screenshot/"privacy mode" resume upload, which
+            # is exactly the flow that was producing different Suggested
+            # Roles on every re-upload of the same screenshots.
+            temperature=0.0,
+            seed=config.GEMINI_SEED,
+        )
+
+    parts = [types.Part.from_bytes(data=data, mime_type=mime) for data, mime in images]
+    contents = [prompt, *parts]
+
+    text = _call_with_fallback(build_config, contents=contents)
     try:
         return json.loads(text)
     except json.JSONDecodeError as exc:
@@ -126,4 +173,4 @@ def generate_text(
             ),
         )
 
-    return _call_with_fallback(build_config, prompt=prompt)
+    return _call_with_fallback(build_config, contents=prompt)

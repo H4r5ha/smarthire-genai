@@ -210,6 +210,16 @@ def _rate_limit_wait(item_count: int) -> None:
     _request_log.append((time.monotonic(), item_count))
 
 
+def _is_daily_quota_exhausted(exc: Exception) -> bool:
+    """True for Google's *daily* free-tier quota (resets in ~24h), as opposed
+    to an ordinary per-minute rate limit that a short retry can ride out.
+    Retrying a per-day quota error with a 20-60s backoff is pointless and just
+    makes the user wait several minutes for a failure that was certain from
+    the first attempt."""
+    text = str(exc)
+    return "RESOURCE_EXHAUSTED" in text and "PerDay" in text
+
+
 def _parse_retry_delay(exc: Exception, default: float = 20.0) -> float:
     """Pull Google's suggested 'retry in Xs' delay out of the error, if present."""
     match = re.search(r"retry in ([0-9.]+)s", str(exc))
@@ -288,6 +298,20 @@ def _embed_gemini_batch(texts: list[str]) -> np.ndarray:
 
         except Exception as exc:
             last_exc = exc
+
+            if _is_daily_quota_exhausted(exc):
+                # A per-day quota will not recover within this request no
+                # matter how long we wait, so fail immediately with a clear,
+                # actionable message instead of retrying for several minutes.
+                raise EmbeddingError(
+                    "Your Gemini free-tier daily embedding quota has been used up for today "
+                    "(embed_content, limit 1000 requests/day). This resets on its own in "
+                    "roughly 24 hours, or you can enable billing on this API key's Google AI "
+                    "Studio project to lift the limit sooner. See "
+                    "https://ai.google.dev/gemini-api/docs/rate-limits for details. "
+                    "This is a quota limit, not a bug in the app."
+                ) from exc
+
             is_rate_limit = (
                 "429" in str(exc)
                 or "RESOURCE_EXHAUSTED" in str(exc)

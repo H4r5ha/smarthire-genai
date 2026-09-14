@@ -7,6 +7,7 @@ Run from the repository root:
 from __future__ import annotations
 
 import sys
+import traceback
 from pathlib import Path
 
 import streamlit as st
@@ -55,6 +56,11 @@ def main() -> None:
     try:
         render()
     except Exception:  # never show raw tracebacks to end users
+        # The real traceback goes to server logs only (never the UI) so a bug
+        # like this is diagnosable from `streamlit run` output / Cloud logs
+        # instead of only ever showing as a generic banner.
+        print("[SmartHire] Unhandled error while rendering a page:", file=sys.stderr)
+        traceback.print_exc()
         st.error("Something went wrong while rendering this page. Please try again or switch pages.")
 
 

@@ -1,4 +1,7 @@
-streamlit>=1.42,<2
+# Job Match's role/keyword search box uses st.selectbox(accept_new_options=True)
+# so a single field both suggests dataset roles as you type and accepts free
+# text -- this parameter requires a reasonably current Streamlit release.
+streamlit>=1.51,<2
 pandas>=2.2,<3
 numpy>=1.26,<3
 pypdf>=5,<7

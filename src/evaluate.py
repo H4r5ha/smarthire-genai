@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -32,7 +33,7 @@ MAX_JUDGE_CALLS = int(
 # Prompt comparison needs two additional generation calls. It is enabled by
 # default because it is explicitly required by the project specification.
 RUN_PROMPT_COMPARISON = (
-    os.getenv("SMARTHIRE_RUN_PROMPT_COMPARISON", "false").strip().lower()
+    os.getenv("SMARTHIRE_RUN_PROMPT_COMPARISON", "true").strip().lower()
     in {"1", "true", "yes", "on"}
 )
 
@@ -360,13 +361,15 @@ def _score_with_judge(
 def _mentor_evaluation() -> list[dict]:
     """Run every mentor case and judge in-scope answers when Gemini is available.
 
-    Refusal cases are checked deterministically. If the Gemini judge becomes
-    unavailable, remaining in-scope cases are marked N/A rather than being
-    reported as zero-quality answers.
+    Refusal cases are checked deterministically. Each in-scope case gets its
+    own judge attempt (with one short retry) independent of whether an
+    earlier case's judge call failed, so a single transient failure or one
+    rate-limited call doesn't mark every case after it N/A. A case whose
+    judge call still fails after the retry is marked N/A with the actual
+    error recorded, rather than reported as a zero-quality answer.
     """
     rows: list[dict] = []
     judge_calls = 0
-    judge_service_unavailable = False
 
     for case_index, case in enumerate(MENTOR_CASES, start=1):
         question = case["question"]
@@ -406,18 +409,7 @@ def _mentor_evaluation() -> list[dict]:
             }
 
             if case["expected_scope"] == "in-scope":
-                if judge_service_unavailable:
-                    judge["correctness_justification"] = (
-                        "Judge skipped because Gemini was unavailable earlier "
-                        "in this evaluation run."
-                    )
-                    judge["grounding_justification"] = (
-                        "No judge score was available because Gemini was unavailable."
-                    )
-                    judge["helpfulness_justification"] = (
-                        "No judge score was available because Gemini was unavailable."
-                    )
-                elif judge_calls >= MAX_JUDGE_CALLS:
+                if judge_calls >= MAX_JUDGE_CALLS:
                     judge["correctness_justification"] = (
                         "Judge skipped after reaching the configured "
                         f"evaluation limit of {MAX_JUDGE_CALLS} judge calls."
@@ -429,21 +421,41 @@ def _mentor_evaluation() -> list[dict]:
                         "Judge skipped because the evaluation budget was reached."
                     )
                 else:
-                    try:
-                        judge = _score_with_judge(
-                            question=question,
-                            answer=answer,
-                            expected_scope=case["expected_scope"],
-                            evidence=evidence,
-                        )
-                        judge_calls += 1
-                    except Exception as judge_exc:
-                        judge_service_unavailable = True
+                    # Each case gets its own attempt. A failure here (after
+                    # gemini_client.py has already exhausted its internal
+                    # retries + model fallback for this one call) does NOT
+                    # give up on the rest of the run — a prior outage or a
+                    # single rate-limited call should not zero out every
+                    # case that comes after it. One short extra retry is
+                    # given here in case the failure was a brief cross-call
+                    # gap rather than a sustained outage/quota exhaustion.
+                    judge_calls += 1  # counts attempts, not just successes,
+                    # so a string of failures still respects the call budget
+                    # instead of retrying indefinitely against an exhausted
+                    # quota.
+                    last_judge_exc: Exception | None = None
+                    for attempt in range(2):
+                        try:
+                            judge = _score_with_judge(
+                                question=question,
+                                answer=answer,
+                                expected_scope=case["expected_scope"],
+                                evidence=evidence,
+                            )
+                            last_judge_exc = None
+                            break
+                        except Exception as judge_exc:
+                            last_judge_exc = judge_exc
+                            if attempt == 0:
+                                time.sleep(5)
+
+                    if last_judge_exc is not None:
+                        reason = str(last_judge_exc)
                         judge = {
                             "correctness": None,
                             "correctness_justification": (
-                                "Gemini judge unavailable; no quality score was "
-                                f"recorded. Reason: {judge_exc}"
+                                "Gemini judge unavailable for this case; no "
+                                f"quality score was recorded. Reason: {reason}"
                             ),
                             "grounding": None,
                             "grounding_justification": (
@@ -453,6 +465,7 @@ def _mentor_evaluation() -> list[dict]:
                             "helpfulness_justification": (
                                 "Gemini judge unavailable; no quality score was recorded."
                             ),
+                            "judge_error": reason,
                         }
 
             rows.append(
@@ -537,7 +550,7 @@ def _prompt_comparison() -> dict:
                 "status": "skipped",
                 "reason": (
                     "Prompt comparison disabled by "
-                    "SMART_HIRE_RUN_PROMPT_COMPARISON."
+                    "SMARTHIRE_RUN_PROMPT_COMPARISON."
                 ),
                 "question": question,
                 "evidence": [
@@ -895,8 +908,14 @@ def write_report(result: dict, path: Path) -> Path:
     if attention_rows:
         lines.extend(["", "## Evaluation warnings", ""])
         for row in attention_rows:
+            reason = row.get("judge_error") or row.get("error")
+            suffix = (
+                f" Reason: {_short_text(reason, 150)}"
+                if reason
+                else ""
+            )
             lines.append(
-                f"- {_short_text(row['question'], 150)} — quality judge score unavailable."
+                f"- {_short_text(row['question'], 150)} — quality judge score unavailable.{suffix}"
             )
 
     lines.extend([

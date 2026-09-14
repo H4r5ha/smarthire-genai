@@ -113,12 +113,33 @@ CV_PAGE_CSS = """
   line-height:1.65;
 }
 
-.priority-row{
+/* Missing Technical Skills: each priority level is its own labeled,
+   colour-tinted block, with the badge, arrow, and its chips all on one
+   wrapping line -- so High / Medium / Low read as distinct groups without
+   splitting the label from its own chips onto separate lines. */
+.priority-group{
+  border-left:3px solid var(--border);
+  background:#FAFAF8;
+  border-radius:10px;
+  padding:.55rem .85rem;
+  margin:.55rem 0;
+}
+.priority-group.high{ border-left-color:#E2897B; background:#FDF4F2; }
+.priority-group.medium{ border-left-color:#E7C26E; background:#FBF6E9; }
+.priority-group.neutral{ border-left-color:#C7CCD6; background:#F5F5F2; }
+
+.priority-group-row{
   display:flex;
-  align-items:center;
   flex-wrap:wrap;
-  gap:.5rem;
-  margin:.5rem 0;
+  align-items:center;
+  gap:.45rem;
+}
+.priority-arrow{
+  color:var(--accent);
+  font-weight:700;
+  font-size:13px;
+  opacity:.75;
+  margin-right:.05rem;
 }
 
 .summary-box{
@@ -270,7 +291,7 @@ def _target_job_card(job: dict) -> None:
                 f'<div class="target-meta"><b>{esc(job.get("company", "Unknown company"))}</b> · {esc(job.get("location", "Not specified"))}</div>'
             )
         with right:
-            if st.button("Change Job", use_container_width=True, key="cv_change_job"):
+            if st.button("Change Job", type="primary", use_container_width=True, key="cv_change_job"):
                 state.go_to(C.PAGE_JOBS)
                 st.rerun()
         _card_edge_bottom()
@@ -297,7 +318,6 @@ def _ats_score(r: dict) -> None:
     total = matched_count + missing_count
     before = int(r.get("ats_score_before", r.get("readiness", 0)))
     after = int(r.get("ats_score_after", before))
-    why_skills = r.get("why_skills", "")
 
     with st.container(border=True, key="cv_card_ats_score"):
         md('<div class="card-heading">ATS Match Score</div>')
@@ -324,8 +344,6 @@ def _ats_score(r: dict) -> None:
                 'overall profile read rather than a skill-by-skill count.'
             )
         md(f'<div class="body-copy" style="margin-top:.9rem">{copy}</div>')
-        if why_skills:
-            md(f'<div class="body-copy" style="margin-top:.6rem">{esc(why_skills)}</div>')
         _card_edge_bottom()
 
 
@@ -339,7 +357,11 @@ def _matched_skills(r: dict) -> None:
                 '<div class="body-copy">These already appear on your resume and match what this role '
                 'asks for — keep them front and center in your skills section and summary.</div>'
             )
-            md(''.join(f'<span class="chip good">{esc(skill)}</span>' for skill in matched))
+            md(
+                '<div style="margin-top:.65rem">'
+                + ''.join(f'<span class="chip good">{esc(skill)}</span>' for skill in matched)
+                + '</div>'
+            )
         else:
             md(
                 '<div class="body-copy">None of your current resume skills matched this role\u2019s '
@@ -349,10 +371,16 @@ def _matched_skills(r: dict) -> None:
 
 
 def _missing_skills(r: dict) -> None:
-    """Technical gaps, grouped by priority — these genuinely require learning."""
+    """Technical gaps, grouped by priority — these genuinely require learning.
+
+    Each priority level gets its own labeled, color-tinted block (label row,
+    then its skill chips on the line below) instead of one flat inline row,
+    so High/Medium/Low read as clearly separate groups rather than one
+    run-on line of badges and chips.
+    """
     with st.container(border=True, key="cv_card_missing_skills"):
         md('<div class="card-heading">Missing Technical Skills</div>')
-        rows: list[str] = []
+        groups: list[str] = []
         for priority, kind in (("High", "high"), ("Medium", "medium"), ("Low", "neutral")):
             skills = [s for s in (r.get("missing_skills", []) or []) if s.get("priority") == priority]
             if not skills:
@@ -361,16 +389,19 @@ def _missing_skills(r: dict) -> None:
                 f'<span class="chip {"warn" if priority == "High" else "neutral"}">{esc(item.get("skill", ""))}</span>'
                 for item in skills
             )
-            rows.append(
-                f'<div class="priority-row">{badge(priority + " Priority", kind)}<span>{chips_html}</span></div>'
+            groups.append(
+                f'<div class="priority-group {kind}">'
+                f'<div class="priority-group-row">{badge(priority + " Priority", kind)}'
+                f'<span class="priority-arrow">&#8594;</span>{chips_html}</div>'
+                f'</div>'
             )
-        if rows:
+        if groups:
             md(
                 '<div class="body-copy">Closing these — starting with High priority — is what raises your '
                 'score beyond what rewriting alone can do. See Recommended Next Steps below for where to '
                 'start.</div>'
             )
-            md(''.join(rows))
+            md(''.join(groups))
         else:
             md('<div class="body-copy">No missing technical skills were identified for this role — nice work.</div>')
         _card_edge_bottom()
@@ -409,8 +440,7 @@ def _summary(r: dict, profile: dict) -> None:
         after_text = r.get("summary", "No improved summary was generated.")
 
         heading_label = "Resume Summary — Before & After" if (has_summary and before_text) else "Resume Summary — Suggested (none found on resume)"
-        source_badge = sample_badge() if r.get("source") == "sample" else badge("LIVE", "good")
-        md(f'<div class="card-heading">{esc(heading_label)} {badge("AI Generated", "accent")} {source_badge}</div>')
+        md(f'<div class="card-heading">{esc(heading_label)}</div>')
 
         if not has_summary or not before_text:
             md(
@@ -427,9 +457,10 @@ def _summary(r: dict, profile: dict) -> None:
             f'<div class="ba-card after"><div class="lbl">AFTER (SUGGESTED)</div><div class="txt">{esc(after_text)}</div></div>'
             '</div>'
         )
+        md('<div style="height:.85rem"></div>')
         spacer, action = st.columns([4.6, 1.0], gap="small")
         with action:
-            if st.button("Copy", use_container_width=True, key="cv_copy_summary"):
+            if st.button("Copy", type="primary", use_container_width=True, key="cv_copy_summary"):
                 st.session_state["copied"] = True
         if st.session_state.get("copied"):
             md('<div class="copy-note">Summary copied below for easy use.</div>')
@@ -517,7 +548,7 @@ def _recommendations(r: dict) -> None:
         tag = sample_badge() if r.get("source") == "sample" else ""
         md(f'<div class="card-heading">Recommended Next Steps {tag}</div>')
         md(
-            '<div class="body-copy skills-followup">Prioritised actions to raise your ATS score, plus '
+            '<div class="body-copy skills-followup" style="margin-bottom:.85rem">Prioritised actions to raise your ATS score, plus '
             'quick fixes that need no new skills at all.</div>'
         )
         recommendations = r.get("recommendations", []) or []

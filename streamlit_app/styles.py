@@ -271,7 +271,8 @@ hr{ border-color:var(--border) !important; }
 .profile-main{ display:flex; gap:1rem; align-items:flex-start; }
 .profile-text{ min-width:0; }
 .profile-name{ font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; }
-.profile-role{ color:var(--accent); font-size:13px; font-weight:600; margin:.12rem 0 .35rem; }
+.profile-role{ color:var(--accent); font-size:13px; font-weight:600; margin:.12rem 0 .35rem; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; }
+.profile-role-tag{ color:var(--muted); font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; background:var(--card-soft); border:1px solid var(--border); border-radius:999px; padding:.14rem .55rem; }
 .profile-skills{ margin-top:.55rem; }
 .profile-checks{ padding-left:1rem; border-left:1px solid var(--border); }
 .profile-check-title{ color:var(--muted); font-size:12px; font-weight:600; margin-bottom:.45rem; }
@@ -309,13 +310,33 @@ hr{ border-color:var(--border) !important; }
 .eyebrow{ font-size:10px; letter-spacing:.16em; color:var(--muted); font-weight:600; }
 .target-title{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:700; margin:.15rem 0; }
 .target-meta{ color:var(--muted); font-size:12.5px; }
+/* Bottom breathing-room spacer for the TARGET JOB card (page 3, and the
+   copy of it reused on page 4's AI Career Mentor) -- defined globally
+   here (rather than only in the CV Improvement page's own CSS block) so
+   it also takes effect wherever else this card is reused. */
+.cv-card-edge-space{
+  display:block;
+  flex:0 0 .55rem;
+  height:.55rem;
+  min-height:.55rem;
+  width:100%;
+  margin:0 !important;
+  padding:0 !important;
+}
 .content-card{ padding:1rem 1.1rem; margin:0 0 1rem; }
 .soft-card{ background:var(--card-soft); }
 .card-heading{ display:flex; align-items:center; gap:.5rem; font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600; margin-bottom:.75rem; }
 .readiness-body{ display:flex; align-items:center; gap:1.1rem; }
 .readiness-body .ring{ flex:none; margin:0; }
 .readiness-copy,.body-copy{ color:var(--muted); font-size:13px; line-height:1.6; }
-.priority-row{ display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin:.45rem 0; }
+/* Missing Technical Skills: each priority level as its own labeled,
+   colour-tinted, indented block (see cv_improvement.py). */
+.priority-group{ border-left:3px solid var(--border); background:#FAFAF8; border-radius:10px; padding:.55rem .85rem; margin:.55rem 0; }
+.priority-group.high{ border-left-color:#E2897B; background:#FDF4F2; }
+.priority-group.medium{ border-left-color:#E7C26E; background:#FBF6E9; }
+.priority-group.neutral{ border-left-color:#C7CCD6; background:#F5F5F2; }
+.priority-group-row{ display:flex; flex-wrap:wrap; align-items:center; gap:.45rem; }
+.priority-arrow{ color:var(--accent); font-weight:700; font-size:13px; opacity:.75; margin-right:.05rem; }
 .summary-box{ background:var(--card-soft); border:1px solid var(--border); border-radius:12px; padding:.9rem 1rem; font-size:13.5px; line-height:1.7; }
 .copy-note{ color:var(--success); font-size:12px; margin:-.55rem 0 .6rem; }
 .bullet-improvement{ display:grid; grid-template-columns:28px minmax(0,1fr) 30px minmax(0,1fr); gap:.7rem; align-items:stretch; margin:.7rem 0 1rem; }
@@ -541,6 +562,7 @@ hr{ border-color:var(--border) !important; }
   version-sensitive generic border-wrapper testid.
 */
 .st-key-cv_card_target_job,
+.st-key-mentor_card_target_job,
 .st-key-cv_card_ats_score,
 .st-key-cv_card_matched_skills,
 .st-key-cv_card_missing_skills,
@@ -565,6 +587,7 @@ hr{ border-color:var(--border) !important; }
 /* Streamlit inserts descendant layout blocks. Keep those transparent so
    the actual keyed card remains the visible white surface. */
 .st-key-cv_card_target_job [data-testid="stVerticalBlock"],
+.st-key-mentor_card_target_job [data-testid="stVerticalBlock"],
 .st-key-cv_card_ats_score [data-testid="stVerticalBlock"],
 .st-key-cv_card_matched_skills [data-testid="stVerticalBlock"],
 .st-key-cv_card_missing_skills [data-testid="stVerticalBlock"],
@@ -583,6 +606,8 @@ hr{ border-color:var(--border) !important; }
 /* All ordinary content inside CV parent cards sits on white. */
 .st-key-cv_card_target_job,
 .st-key-cv_card_target_job > div,
+.st-key-mentor_card_target_job,
+.st-key-mentor_card_target_job > div,
 .st-key-cv_card_ats_score,
 .st-key-cv_card_ats_score > div,
 .st-key-cv_card_matched_skills,
@@ -650,6 +675,7 @@ hr{ border-color:var(--border) !important; }
 
 /* Balanced vertical rhythm inside every CV card. */
 .st-key-cv_card_target_job,
+.st-key-mentor_card_target_job,
 .st-key-cv_card_ats_score,
 .st-key-cv_card_matched_skills,
 .st-key-cv_card_missing_skills,
@@ -702,6 +728,56 @@ hr{ border-color:var(--border) !important; }
 }
 .st-key-mentor_input_bar [data-testid="stVerticalBlock"]{
   background:transparent !important;
+}
+/* The composer now wraps its text input + send button in an st.form so
+   Enter submits the question (a bare text_input + a separate st.button
+   outside any form never responds to Enter, only to a mouse click on the
+   button) and clear_on_submit empties the field afterwards. The form's own
+   default border/padding is stripped so the card still reads as one plain
+   surface, and the submit button needs its own primary-blue rule because
+   [data-testid="stFormSubmitButton"] is not covered by the app's generic
+   .stButton rules. */
+.st-key-mentor_input_bar [data-testid="stForm"]{
+  border:none !important;
+  padding:0 !important;
+  margin:0 !important;
+  background:transparent !important;
+}
+.st-key-mentor_input_bar [data-testid="stFormSubmitButton"] button[kind="primary"]{
+  background:var(--accent) !important;
+  border-color:var(--accent) !important;
+  color:#fff !important;
+  box-shadow:0 8px 18px -10px rgba(79,70,229,.7) !important;
+}
+.st-key-mentor_input_bar [data-testid="stFormSubmitButton"] button[kind="primary"]:hover{
+  background:#4338CA !important;
+  border-color:#4338CA !important;
+}
+.st-key-mentor_input_bar [data-testid="stFormSubmitButton"] button[kind="primary"] *{
+  color:#fff !important;
+}
+/* Belt-and-braces: target the send button directly via its own Streamlit
+   key class as well, in case the button's default kind="primary" text
+   color from the base theme wins the cascade against the container-scoped
+   rules above. Background stays the same accent blue -- only the label
+   ("↑") is forced to white so it's legible. */
+.st-key-mentor_send_button button,
+.st-key-mentor_send_button button p,
+.st-key-mentor_send_button button span,
+.st-key-mentor_send_button button *{
+  color:#fff !important;
+}
+
+/* Job Match page: "Search a Role, Skill, or Keyword" box -- the "Search"
+   submit button is also an st.form_submit_button(type="primary"), which
+   [data-testid="stFormSubmitButton"] button[kind="primary"] otherwise
+   leaves with the base theme's black label text on the blue background.
+   Force the label to white without touching the background color. */
+.st-key-job_search_button button,
+.st-key-job_search_button button p,
+.st-key-job_search_button button span,
+.st-key-job_search_button button *{
+  color:#fff !important;
 }
 
 /* Suggested Questions: let the full question wrap onto two or three

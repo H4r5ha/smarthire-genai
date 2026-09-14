@@ -52,3 +52,8 @@ SS_EVAL = "evaluation_results"
 # ---------------------------------------------------------------------------
 RESUME_FILE_TYPES = ["pdf", "docx", "txt"]
 MAX_UPLOAD_MB = 10
+
+# Privacy-mode upload: candidate crops out the personal-info section of their
+# resume and uploads only screenshot(s) of the rest (skills/experience/education).
+RESUME_IMAGE_FILE_TYPES = ["png", "jpg", "jpeg", "webp"]
+MAX_RESUME_IMAGES = 4

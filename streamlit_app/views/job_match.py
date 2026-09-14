@@ -6,15 +6,6 @@ from .. import backend, config as C, state
 from ..components import chips, empty_state, error_state, esc, md, metric_row, page_header, score_pill
 
 
-CUSTOM_OPTION = "Custom search..."
-COMMON_ROLE_OPTIONS = [
-    "UI/UX Designer", "UI/UX Design Engineer", "UI/UX Developer", "UX Designer",
-    "Product Designer", "Software Engineer", "Frontend Developer", "Backend Developer",
-    "Full Stack Developer", "Data Scientist", "Machine Learning Engineer", "Data Analyst",
-    "Business Analyst", "DevOps Engineer", "Cloud Engineer", "Python Developer",
-    "Java Developer", "React Developer", "QA Engineer", "Cybersecurity Analyst",
-]
-
 JOB_MATCH_PAGE_CSS = """
 <style>
 .jd-card-title{
@@ -133,16 +124,203 @@ JOB_MATCH_PAGE_CSS = """
   box-shadow:0 0 0 3px rgba(79,70,229,.12) !important;
 }
 
-.job-search-row [data-testid="stSelectbox"] [data-baseweb="select"] > div,
-.job-search-row [data-testid="stTextInput"] input{
+/* Role/keyword search box: same white card treatment as the "Paste a Job
+   Description" card above it, so the two entry points read as matching
+   halves of one row instead of one styled card next to bare, unstyled
+   widgets. */
+.st-key-search_card{
+  background:#FFFFFF !important;
+  border:1px solid #171B2B !important;
+  border-radius:16px !important;
+  box-shadow:0 1px 2px rgba(20,20,40,.04), 0 8px 22px -14px rgba(20,20,40,.14) !important;
+  padding:1.05rem 1.05rem !important;
+}
+.st-key-search_card > div{
+  background:#FFFFFF !important;
+  border-radius:15px !important;
+}
+.st-key-search_card .stElementContainer{
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+/* Selectbox + custom-search text input: same shaded input surface used by
+   the JD textarea and the resume uploader (#F1F3F7), instead of the
+   previous `.job-search-row` selector, which was never attached to any
+   actual element and so never matched anything.
+
+   The selectbox itself needs several selector shapes, not just one: an
+   app-wide rule in styles.py ([data-testid="stSelectbox"] > div > div)
+   already forces a plain white background with !important, and it can
+   land on a different nested div than [data-baseweb="select"] > div
+   depending on the installed Streamlit build. Rather than guess which
+   node is the "real" visible one, every plausible candidate is covered
+   here -- each scoped under .st-key-search_card, which outranks the
+   unscoped global rule on specificity regardless of which one actually
+   paints the pixel. */
+.st-key-search_card [data-testid="stSelectbox"] > div > div,
+.st-key-search_card [data-testid="stSelectbox"] [data-baseweb="select"],
+.st-key-search_card [data-testid="stSelectbox"] [data-baseweb="select"] > div,
+.st-key-search_card [data-testid="stSelectbox"] [data-baseweb="select"] div[role="combobox"],
+.st-key-search_card [data-testid="stTextInput"] input{
   background:#F1F3F7 !important;
   border:1px solid #171B2B !important;
+  border-radius:12px !important;
+  box-shadow:none !important;
 }
-.job-search-row .stButton > button{ min-height:44px !important; }
+.st-key-search_card [data-testid="stSelectbox"]:focus-within > div > div,
+.st-key-search_card [data-testid="stSelectbox"] [data-baseweb="select"]:focus-within,
+.st-key-search_card [data-testid="stSelectbox"] [data-baseweb="select"]:focus-within > div,
+.st-key-search_card [data-testid="stTextInput"] input:focus{
+  border-color:var(--accent) !important;
+  box-shadow:0 0 0 3px rgba(79,70,229,.12) !important;
+}
+.st-key-search_card .stButton > button{ min-height:44px !important; }
+/* The search box now wraps its selectbox + button in an st.form so pressing
+   Enter submits the search (a bare selectbox + a separate st.button outside
+   any form never responds to Enter). The form adds its own default border
+   and padding, which must be stripped so the card keeps looking like one
+   surface, and the submit button needs the same primary-blue treatment as
+   every other .stButton since [data-testid="stFormSubmitButton"] is a
+   different element and isn't covered by the app's .stButton rules. */
+.st-key-search_card [data-testid="stForm"]{
+  border:none !important;
+  padding:0 !important;
+  margin:0 !important;
+  background:transparent !important;
+}
+.st-key-search_card [data-testid="stFormSubmitButton"] button{ min-height:44px !important; }
+.st-key-search_card [data-testid="stFormSubmitButton"] button[kind="primary"]{
+  background:var(--accent) !important;
+  border-color:var(--accent) !important;
+  color:#fff !important;
+  box-shadow:0 8px 18px -10px rgba(79,70,229,.7) !important;
+}
+.st-key-search_card [data-testid="stFormSubmitButton"] button[kind="primary"]:hover{
+  background:#4338CA !important;
+  border-color:#4338CA !important;
+}
+.st-key-search_card [data-testid="stFormSubmitButton"] button[kind="primary"] *{
+  color:#fff !important;
+}
 
 /* The expandable "View Details" panel under a job card is also an inner
    surface - same treatment. */
 .job-details{ background:#F1F3F7 !important; }
+
+/* ---------- Top "three ways in" intro card ---------- */
+.jm-intro{
+  margin:0 0 1.3rem 0;
+  padding:1.1rem 1.3rem 1.2rem 1.3rem;
+  border-radius:var(--r-card);
+  background:linear-gradient(180deg,#F5F7FF 0%,#F0F3FF 100%);
+  border:1px solid var(--accent-border);
+  box-shadow:var(--shadow);
+}
+.jm-intro-head{
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  margin-bottom:.15rem;
+}
+.jm-intro-ico{
+  width:26px; height:26px; border-radius:8px;
+  background:var(--accent); color:#fff;
+  display:grid; place-items:center;
+  font-size:13px; flex:none;
+  box-shadow:0 4px 10px -4px rgba(79,70,229,.55);
+}
+.jm-intro-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:700;
+  font-size:15px;
+  color:var(--text);
+}
+.jm-intro-sub{
+  color:var(--muted);
+  font-size:12.5px;
+  margin:0 0 .95rem 2.35rem;
+}
+.jm-steps{
+  display:flex;
+  align-items:stretch;
+  gap:.9rem;
+}
+.jm-step{
+  flex:1;
+  display:flex;
+  gap:.7rem;
+  align-items:flex-start;
+  background:#FFFFFF;
+  border:1px solid var(--accent-border);
+  border-radius:12px;
+  padding:.75rem .85rem;
+  min-width:0;
+}
+.jm-step-num{
+  width:24px; height:24px; border-radius:50%;
+  background:var(--accent-soft);
+  color:var(--accent);
+  border:1px solid var(--accent-border);
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:700;
+  font-size:12px;
+  display:grid; place-items:center;
+  flex:none;
+  margin-top:1px;
+}
+.jm-step-body{ min-width:0; }
+.jm-step-h{
+  font-weight:600;
+  font-size:13px;
+  color:var(--text);
+  line-height:1.3;
+  margin-bottom:.15rem;
+}
+.jm-step-d{
+  color:var(--muted);
+  font-size:11.5px;
+  line-height:1.45;
+}
+.jm-intro-foot{
+  margin:.85rem 0 0 0;
+  color:var(--muted);
+  font-size:11.5px;
+  font-style:italic;
+}
+.jm-relevance-note{
+  margin:.9rem 0 1.3rem 0;
+  padding:.55rem .8rem;
+  border-radius:10px;
+  background:var(--card-soft);
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.jm-relevance-note b{ color:var(--text); }
+@media (max-width: 900px){
+  .jm-steps{ flex-direction:column; }
+  .jm-intro-sub{ margin-left:0; }
+}
+
+/* ---------- "or" divider between the three job-targeting routes ---------- */
+.or-divider{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  margin:.15rem 0 1.1rem 0;
+  color:var(--muted);
+  font-size:11.5px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+}
+.or-divider::before, .or-divider::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:var(--border, #E4E7EC);
+}
 
 /* Final JD Send-button refinement: stable keyed widget, white text, slightly
    inset from the bottom-right corner of the textarea. */
@@ -198,6 +376,22 @@ def _run_search(query: str) -> None:
 
 
 def _autocomplete_options() -> list[str]:
+    """Dropdown options for role/keyword search.
+
+    Every entry is a title that actually exists in the job dataset -- a
+    previous version merged in a fixed list of ~20 role names ahead of the
+    real dataset titles, several of which (e.g. "UI/UX Designer", "DevOps
+    Engineer", "QA Engineer", "Cybersecurity Analyst") have zero matching
+    rows in the corpus, which made the dropdown suggest searches guaranteed
+    to return an empty state.
+
+    The widget itself is a single st.selectbox with `accept_new_options=True`
+    (see `_search_bar`), which is what gives this list-plus-free-text
+    behaviour: typing filters these options live as suggestions, and typing
+    something that isn't in the list is still accepted and searched as-is --
+    no separate "Custom search..." sentinel/escape-hatch option or second
+    text field needed.
+    """
     titles: list[str] = []
     try:
         from src.data.loader import load_jobs
@@ -210,14 +404,7 @@ def _autocomplete_options() -> list[str]:
     except Exception:
         titles = []
 
-    ordered: list[str] = []
-    seen: set[str] = set()
-    for item in [*COMMON_ROLE_OPTIONS, *titles]:
-        key = item.casefold()
-        if key not in seen:
-            seen.add(key)
-            ordered.append(item)
-    return ordered + [CUSTOM_OPTION]
+    return sorted(titles, key=str.casefold)
 
 
 def _save_job_description() -> bool:
@@ -229,12 +416,19 @@ def _save_job_description() -> bool:
     st.session_state[C.SS_JOB_DESCRIPTION] = text
     if not text:
         return False
-    # Pull a short title from the first non-empty line for the "Target Job"
-    # card on CV Improvement; the full pasted text still goes to the LLM as
-    # the job description so nothing is lost.
-    first_line = next((line.strip() for line in text.splitlines() if line.strip()), "Pasted Job Description")
+    # Ask the LLM for the actual role name being advertised, reading the
+    # whole pasted JD rather than just its first line -- a JD very often
+    # opens with a company name, location or "We're hiring!" line before the
+    # title ever appears, and that first line was previously shown verbatim
+    # as the "Target Job" title regardless of whether it was a role at all.
+    # If the JD genuinely states no title anywhere, this infers an
+    # appropriate one from the described skills/responsibilities instead of
+    # leaving the card mislabeled; it only falls back to the first line if
+    # the extraction call itself fails.
+    with st.spinner("Reading job description..."):
+        title = backend.extract_job_title(text)
     st.session_state[C.SS_TARGET_JOB] = {
-        "title": first_line[:80],
+        "title": title,
         "company": "",
         "location": "",
         "description": text,
@@ -281,44 +475,58 @@ def _job_description_input() -> None:
     st.markdown('<div style="height:.9rem"></div>', unsafe_allow_html=True)
 
 def _search_bar() -> None:
-    st.markdown(
-        '<div class="search-help">Search a role, skill, or keyword. Start typing to see matching suggestions.</div>',
-        unsafe_allow_html=True,
-    )
-    options = _autocomplete_options()
-    c1, c2 = st.columns([5, 1], gap="small", vertical_alignment="bottom")
-    with c1:
-        selected = st.selectbox(
-            "Search for jobs",
-            options,
-            index=None,
-            placeholder="Search for job titles, skills or keywords...",
-            label_visibility="collapsed",
-            key="job_role_autocomplete",
+    with st.container(border=True, key="search_card"):
+        md('<div class="jd-card-title">Search a Role, Skill, or Keyword</div>')
+        md(
+            '<div class="jd-card-sub">Start typing to see matching suggestions from the job corpus '
+            '&mdash; or keep typing your own and press Enter to search it directly.</div>'
         )
-        query = selected or ""
-        if selected == CUSTOM_OPTION:
-            query = st.text_input(
-                "Custom job query",
-                placeholder="Type any role, skill, or keyword...",
-                label_visibility="collapsed",
-                key="custom_job_query",
-            )
-    with c2:
-        go = st.button("Search", type="primary", use_container_width=True, key="job_search_button")
+        options = _autocomplete_options()
+        # Wrapped in a form so pressing Enter submits the search: a bare
+        # selectbox + a separate st.button outside any form never responds
+        # to the Enter key, only to an actual click.
+        with st.form("job_search_form", border=False, clear_on_submit=False):
+            c1, c2 = st.columns([5, 1], gap="small", vertical_alignment="bottom")
+            with c1:
+                selected = st.selectbox(
+                    "Search for jobs",
+                    options,
+                    index=None,
+                    placeholder="Search for job titles, skills or keywords...",
+                    label_visibility="collapsed",
+                    key="job_role_autocomplete",
+                    accept_new_options=True,
+                )
+            with c2:
+                go = st.form_submit_button("Search", type="primary", use_container_width=True, key="job_search_button")
+        query = (selected or "").strip()
 
-    if go and query.strip():
+    if go and query:
         _run_search(query)
         st.rerun()
 
 
 def _suggested_roles() -> None:
-    roles = backend.suggest_roles(state.profile())
+    try:
+        roles = backend.suggest_roles(state.profile())
+    except backend.BackendError as exc:
+        error_state("Could not load suggested roles.", str(exc))
+        return
     md(
         '<div class="section-head"><span>Suggested Roles '
-        '<span class="section-note">Ranked from your profile and the job corpus</span></span>'
-        '<span class="badge good">PROFILE RANKING</span></div>'
+        '<span class="section-note">Ranked by direct skill-fit against the job corpus '
+        '&mdash; this can differ from the title on your parsed profile, which is only '
+        'the role you stated on your resume, not a corpus match</span></span></div>'
     )
+    if not roles:
+        empty_state(
+            "No resume on file yet.",
+            "Upload or paste your resume on the Resume Analysis page to see roles "
+            "matched to your actual skills, or use the job description box or "
+            "role dropdown above to search right away.",
+            icon="user",
+        )
+        return
     cols = st.columns(3, gap="small")
     for rank, (col, r) in enumerate(zip(cols, roles), start=1):
         with col:
@@ -411,15 +619,35 @@ def _results() -> None:
         return
 
     s = res["summary"]
-    md(
-        '<div class="section-head results-head"><span>Match Summary</span>'
-        '<span class="badge accent">SEMANTIC SEARCH</span></div>'
-    )
-    metric_row([
-        ("Relevant Jobs", s["relevant_jobs"], "for this query", ""),
-        ("Best Match", s["best_match"], "top ranked role", "good"),
-        ("Average Match", s["avg_match"], "across results", "accent"),
-    ])
+    personalized = s.get("personalized", False)
+    if personalized:
+        md(
+            '<div class="section-head results-head"><span>Match Summary</span>'
+            '<span class="badge accent">SEMANTIC SEARCH</span></div>'
+        )
+        metric_row([
+            ("Relevant Jobs", s["relevant_jobs"], "for this query", ""),
+            ("Best Match", s["best_match"], "top ranked role", "good"),
+            ("Average Match", s["avg_match"], "across results", "accent"),
+        ])
+    else:
+        # No resume on file: the percentages below are query/role-to-job
+        # semantic relevance, not a personalized fit score, so they must not
+        # be labeled "Match" -- that implies scored against the candidate,
+        # which there isn't one for yet.
+        md(
+            '<div class="section-head results-head"><span>Search Relevance</span>'
+            '<span class="badge neutral">KEYWORD SEARCH \u2014 NO RESUME</span></div>'
+        )
+        metric_row([
+            ("Relevant Jobs", s["relevant_jobs"], "for this query", ""),
+            ("Best Relevance", s["best_match"], "top ranked job", ""),
+            ("Average Relevance", s["avg_match"], "across results", ""),
+        ])
+        md(
+            '<div class="jm-relevance-note">Upload your resume on the Resume Analysis '
+            'page to see a personalized <b>Match</b> score instead of plain search relevance.</div>'
+        )
 
     query = esc(st.session_state[C.SS_JOB_QUERY] or "your query")
     md(
@@ -446,6 +674,10 @@ def _results() -> None:
                 st.rerun()
 
 
+def _or_divider() -> None:
+    md('<div class="or-divider"><span>or</span></div>')
+
+
 def render() -> None:
     st.markdown(JOB_MATCH_PAGE_CSS, unsafe_allow_html=True)
     page_header(
@@ -453,7 +685,29 @@ def render() -> None:
         "Job Match",
         "Find opportunities that match your skills, experience and career direction.",
     )
+    md(
+        '<div class="jm-intro">'
+        '<div class="jm-intro-head">'
+        '<div class="jm-intro-ico">&#9889;</div>'
+        '<div class="jm-intro-title">Three ways to find your target job</div>'
+        '</div>'
+        '<div class="jm-intro-sub">Pick whichever is fastest &mdash; each path leads to the same matched results.</div>'
+        '<div class="jm-steps">'
+        '<div class="jm-step"><div class="jm-step-num">1</div>'
+        '<div class="jm-step-body"><div class="jm-step-h">Paste a job description</div>'
+        '<div class="jm-step-d">Drop in any JD below and we\'ll score your fit against it.</div></div></div>'
+        '<div class="jm-step"><div class="jm-step-num">2</div>'
+        '<div class="jm-step-body"><div class="jm-step-h">Search or pick a role</div>'
+        '<div class="jm-step-d">Type a title into the dropdown to search the job corpus.</div></div></div>'
+        '<div class="jm-step"><div class="jm-step-num">3</div>'
+        '<div class="jm-step-body"><div class="jm-step-h">Choose a suggested role</div>'
+        '<div class="jm-step-d">Jump straight to one of your top 3 profile-based matches.</div></div></div>'
+        '</div>'
+        '</div>'
+    )
     _job_description_input()
+    _or_divider()
     _search_bar()
+    _or_divider()
     _suggested_roles()
     _results()

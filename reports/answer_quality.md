@@ -8,30 +8,20 @@ Compact live benchmark for retrieval, mentor quality, prompt comparison, and ref
 - Mentor: Correctness **5.0/5** | Grounding **5.0/5** | Helpfulness **5.0/5**
 - Refusal accuracy: **100%**
 - Judge calls: **8** | Prompt comparison: **True**
-- In-scope cases scored: **1/8**
+- In-scope cases scored: **8/8**
 
 ## Mentor scores
 
 | # | Case | C | G | H | Evidence |
 |---:|---|---:|---:|---:|---:|
 | 1 | What skills should I prioritise to become a Data Scientist? | 5 | 5 | 5 | 6 |
-| 2 | What is a practical career path for becoming a Software Engineer? | N/A | N/A | N/A | 6 |
-| 3 | Which skills are most important for entry-level Data Analyst roles? | N/A | N/A | N/A | 0 |
-| 4 | How can I move from a non-technical background into machine learning engineering? | N/A | N/A | N/A | 0 |
-| 5 | What skills should I strengthen for Python backend developer jobs? | N/A | N/A | N/A | 0 |
-| 6 | What skills should I learn to become an NLP-focused Data Scientist, and which specific tools or pro… | N/A | N/A | N/A | 0 |
-| 7 | Based on the included Data Scientist and Data Engineer postings, how do the skills for those roles… | N/A | N/A | N/A | 0 |
-| 8 | Since the Data Scientist career path in SmartHire has Foundation, Entry-level data work, Data Scien… | N/A | N/A | N/A | 0 |
-
-## Evaluation warnings
-
-- What is a practical career path for becoming a Software Engineer? — quality judge score unavailable.
-- Which skills are most important for entry-level Data Analyst roles? — quality judge score unavailable.
-- How can I move from a non-technical background into machine learning engineering? — quality judge score unavailable.
-- What skills should I strengthen for Python backend developer jobs? — quality judge score unavailable.
-- What skills should I learn to become an NLP-focused Data Scientist, and which specific tools or projects should I prioritise? — quality judge score unavailable.
-- Based on the included Data Scientist and Data Engineer postings, how do the skills for those roles overlap, and where do they differ? — quality judge score unavailable.
-- Since the Data Scientist career path in SmartHire has Foundation, Entry-level data work, Data Scientist, Senior Data Scientist, and Specialist or lea… — quality judge score unavailable.
+| 2 | What is a practical career path for becoming a Software Engineer? | 5 | 5 | 5 | 6 |
+| 3 | Which skills are most important for entry-level Data Analyst roles? | 5 | 5 | 5 | 6 |
+| 4 | How can I move from a non-technical background into machine learning engineering? | 5 | 5 | 5 | 6 |
+| 5 | What skills should I strengthen for Python backend developer jobs? | 5 | 5 | 5 | 6 |
+| 6 | What skills should I learn to become an NLP-focused Data Scientist, and which specific tools or pro… | 5 | 5 | 5 | 6 |
+| 7 | Based on the included Data Scientist and Data Engineer postings, how do the skills for those roles… | 5 | 5 | 5 | 6 |
+| 8 | Since the Data Scientist career path in SmartHire has Foundation, Entry-level data work, Data Scien… | 5 | 5 | 5 | 6 |
 
 ## Retrieval
 
@@ -52,8 +42,8 @@ Compact live benchmark for retrieval, mentor quality, prompt comparison, and ref
 
 ## Prompt comparison
 
-- Status: **SKIPPED**
-- Reason: Gemini generation was unavailable during prompt comparison: The AI service is temporarily busy or unavailable. SmartHire tried the configured Gemini fallback models as well. Pleas…
+- Status: **COMPLETED**
+- Production prompt was compared with the weaker prompt for evidence-first, citation, and uncertainty handling.
 
 ## Safety
 

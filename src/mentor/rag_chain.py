@@ -556,8 +556,9 @@ def _llm_step(data: dict[str, Any]) -> dict[str, Any]:
             f"{data['prompt']}\n\n"
             "IMPORTANT: The previous response appears incomplete. Rewrite the answer "
             "from the beginning and answer every part of the user's question. "
-            "Do not stop after a heading or introductory clause. Keep it concise "
-            "(about 80-140 words), and finish every sentence and bullet."
+            "Do not stop after a heading or introductory clause. Use whatever "
+            "structure fits the question best, and finish every sentence, section, "
+            "and bullet before ending."
         )
         answer = generate_text(
             retry_prompt,

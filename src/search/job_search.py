@@ -159,6 +159,33 @@ def _normalize_skill(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', value)
 
 
+# Job Match (page 2) shows *technical* skill gaps only -- soft/interpersonal
+# skills belong on the CV Improvement page instead, where they are already
+# surfaced properly (with a "how to add it" suggestion) via the LLM-driven
+# `soft_skills_from_jd` field. Without this filter, the raw Kaggle job
+# dataset's free-text `skills` column mixes tools ("Python", "Power BI")
+# with soft/behavioural terms ("Project Management", "Consulting"), which
+# then leaked into the "Missing" chips and match-score math on this page.
+# Every entry here is run through `_normalize_skill` so it matches however
+# the dataset happens to have punctuated/spaced it.
+_SOFT_SKILL_LABELS = (
+    'project management', 'team management', 'people management',
+    'stakeholder management', 'client management', 'account management',
+    'communication', 'communication skills', 'written communication',
+    'verbal communication', 'interpersonal skills', 'presentation skills',
+    'public speaking', 'leadership', 'teamwork', 'team work',
+    'collaboration', 'problem solving', 'critical thinking',
+    'analytical', 'analytical skills', 'time management', 'adaptability',
+    'creativity', 'conflict resolution', 'decision making',
+    'attention to detail', 'multitasking', 'work ethic',
+    'emotional intelligence', 'negotiation', 'mentoring', 'coaching',
+    'customer service', 'consulting', 'process improvement', 'ownership',
+    'ownership mindset', 'organizational skills', 'organisational skills',
+    'active listening', 'self motivation', 'self-motivation',
+)
+SOFT_SKILL_KEYS = {_normalize_skill(label) for label in _SOFT_SKILL_LABELS}
+
+
 def _skill_map_from_list(skills: list[str]) -> dict[str, str]:
     out: dict[str, str] = {}
     for raw in skills or []:
@@ -170,11 +197,18 @@ def _skill_map_from_list(skills: list[str]) -> dict[str, str]:
 
 
 def _skill_map_from_csv(skills_field: str) -> dict[str, str]:
+    """Parse a job's raw `skills` CSV field into a technical-skill map.
+
+    Soft/interpersonal terms are dropped here (see SOFT_SKILL_KEYS above),
+    which keeps them out of every downstream use of this function: the
+    Job Match "matched"/"missing" chips, the match-percentage math, and the
+    "N of M listed skills" summary line.
+    """
     out: dict[str, str] = {}
     for raw in (skills_field or '').split(','):
         label = raw.strip()
         key = _normalize_skill(label)
-        if key and key not in out:
+        if key and key not in SOFT_SKILL_KEYS and key not in out:
             out[key] = label
     return out
 
@@ -492,6 +526,7 @@ def search(query: str, profile: dict | None = None, k: int | None = None) -> dic
                         'best_match': '0%',
                         'avg_match': '0%',
                         'filters': f'Role: {selected_role}',
+                        'personalized': True,
                     },
                     'jobs': [],
                     'source': 'live',
@@ -527,6 +562,11 @@ def search(query: str, profile: dict | None = None, k: int | None = None) -> dic
                 'best_match': f'{scores[0]}%' if scores else '0%',
                 'avg_match': f'{round(sum(scores) / len(scores))}%' if scores else '0%',
                 'filters': f'Role: {selected_role}',
+                # Without a resume, "score" here is query/role-to-job semantic
+                # similarity, not a personalized fit score -- the UI must not
+                # label it as a "match" to the candidate. See _result_dict's
+                # `why` text, which already spells this out per job.
+                'personalized': bool(profile),
             },
             'jobs': results,
             'source': 'live',
@@ -583,6 +623,9 @@ def search(query: str, profile: dict | None = None, k: int | None = None) -> dic
             'best_match': f'{scores[0]}%' if scores else '0%',
             'avg_match': f'{round(sum(scores) / len(scores))}%' if scores else '0%',
             'filters': 'None',
+            # See the note in the role-selected branch above: this is only a
+            # genuine fit-to-candidate score when a resume/profile is present.
+            'personalized': has_profile,
         },
         'jobs': results,
         'source': 'live',
@@ -647,11 +690,11 @@ def _role_score(profile: dict, role: str, qualified_jobs: list[JobRecord]) -> tu
 def suggest_roles(profile: dict | None) -> list[dict]:
     jobs = load_jobs(JOBS_CSV)
     if not profile:
-        metrics = dataset_metrics()
-        return [
-            {'role': 'Software Engineer', 'jobs': metrics.get('se_jobs', 0), 'reason': 'Available in the local job corpus.'},
-            {'role': 'Data Scientist', 'jobs': metrics.get('ds_jobs', 0), 'reason': 'Available in the local job corpus.'},
-        ]
+        # No parsed resume yet -> there is no skill set to score against, so
+        # there is nothing honest to suggest. Returning an empty list (rather
+        # than two fixed placeholder roles) lets the UI show a real empty
+        # state instead of results that look personalized but aren't.
+        return []
 
     profile_skills = [str(x) for x in profile.get('skills', [])]
     scored: list[dict] = []

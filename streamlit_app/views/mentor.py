@@ -356,33 +356,62 @@ def _sources_html(chat: list[dict]) -> str:
 
 
 def _input_bar() -> None:
-    """Compact ChatGPT-style composer with both controls inside one card."""
+    """Compact ChatGPT-style composer with both controls inside one card.
+
+    Wrapped in an st.form so that: (1) pressing Enter while typing submits
+    the question -- a bare st.text_input plus a separate st.button outside
+    any form never responds to Enter, only to an actual click on the
+    button; and (2) clear_on_submit=True empties the field right after
+    sending, instead of leaving the just-asked question sitting there.
+    """
     with st.container(border=True, key="mentor_input_bar"):
-        left, right = st.columns(
-            [12, 0.85],
-            gap="small",
-            vertical_alignment="center",
-        )
-
-        with left:
-            prompt = st.text_input(
-                "Career question",
-                placeholder="Ask your career question...",
-                label_visibility="collapsed",
-                key="mentor_question_input",
+        with st.form("mentor_form", border=False, clear_on_submit=True):
+            left, right = st.columns(
+                [12, 0.85],
+                gap="small",
+                vertical_alignment="center",
             )
 
-        with right:
-            send = st.button(
-                "↑",
-                type="primary",
-                use_container_width=True,
-                key="mentor_send_button",
-            )
+            with left:
+                prompt = st.text_input(
+                    "Career question",
+                    placeholder="Ask your career question...",
+                    label_visibility="collapsed",
+                    key="mentor_question_input",
+                )
+
+            with right:
+                send = st.form_submit_button(
+                    "↑",
+                    type="primary",
+                    use_container_width=True,
+                    key="mentor_send_button",
+                )
 
     if send and prompt.strip():
         _ask(prompt)
         st.rerun()
+
+
+def _target_job_card(job: dict) -> None:
+    """Same TARGET JOB card used on the CV Improvement page, reused here so
+    the role the mentor is answering about is always visible at a glance."""
+    with st.container(border=True, key="mentor_card_target_job"):
+        left, right = st.columns([5.2, 1.1], gap="medium", vertical_alignment="center")
+        with left:
+            md(
+                '<div class="eyebrow">TARGET JOB</div>'
+                f'<div class="target-title">{esc(job.get("title", "Untitled role"))}</div>'
+                f'<div class="target-meta"><b>{esc(job.get("company", "Unknown company"))}</b> · {esc(job.get("location", "Not specified"))}</div>'
+            )
+        with right:
+            if st.button("Change Job", type="primary", use_container_width=True, key="mentor_change_job"):
+                state.go_to(C.PAGE_JOBS)
+                st.rerun()
+        # Same bottom-breathing-room spacer used on the CV Improvement
+        # page's identical card -- without it, the last line (the
+        # company/location row) sits flush against the card's border.
+        md('<div class="cv-card-edge-space" aria-hidden="true"></div>')
 
 
 def render() -> None:
@@ -392,7 +421,11 @@ def render() -> None:
         "Ask questions, get guidance, and explore career opportunities.",
     )
 
-    _status_cards()
+    job = st.session_state.get(C.SS_TARGET_JOB)
+    if job is None and (state.profile_is_sample() or st.session_state.get(C.SS_DEMO_MODE)):
+        job = sd.SAMPLE_TARGET_JOB
+    if job is not None:
+        _target_job_card(job)
 
     st.markdown(
         '<div style="height:.8rem"></div>',

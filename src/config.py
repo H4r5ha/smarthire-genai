@@ -32,6 +32,13 @@ GEMINI_FALLBACK_MODELS = [
 ]
 GEMINI_MAX_RETRIES = int(_setting('GEMINI_MAX_RETRIES', '2'))
 GEMINI_RETRY_BASE_SECONDS = float(_setting('GEMINI_RETRY_BASE_SECONDS', '1.5'))
+
+# Fixed decoding seed for structured JSON extraction (resume parsing). Paired
+# with temperature=0 in gemini_client.generate_json[_from_images] so that
+# re-uploading the identical resume/screenshot always extracts the same
+# skills/target_role, instead of silently drifting between calls and
+# changing the downstream Suggested Roles / job-match results.
+GEMINI_SEED = int(_setting('GEMINI_SEED', '7'))
 # Primary embedding backend: cloud Gemini embeddings.
 # The API-based backend keeps neural model memory off the Streamlit container.
 EMBEDDING_PROVIDER = _setting('EMBEDDING_PROVIDER', 'gemini-api').strip().lower()
